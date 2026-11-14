@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Get SideDim Pro</title>
+  <meta name="description" content="SideDim Pro: one payment, yours for good. Every frame, particle pack and flashlight, Ambient glow and side-screen decorations.">
+  <link rel="stylesheet" href="styles.css?v=18">
+  <style>
+    .buy { max-width: 680px; text-align: center; }
+    .buy .amt { font-size: 3rem; font-weight: 800; margin: 8px 0 2px; }
+    .buy .amt s { font-size: 1.3rem; opacity: .5; margin-left: 10px; }
+    .buy ul { text-align: left; display: inline-block; margin: 18px 0 26px; line-height: 1.9; }
+    .buy .box { margin-top: 28px; padding: 18px 20px; border-radius: 16px; border: 1px solid var(--line, #333); background: rgba(255,255,255,.04); text-align: left; }
+    .buy .muted { color: var(--muted, #9a9aae); font-size: .92rem; }
+    .buy [hidden] { display: none !important; }
+    .buy .legal-back { display: block; text-align: left; margin-bottom: 18px; }
+  </style>
+</head>
+<body class="legal-page">
+  <main class="legal wrap buy">
+    <a class="legal-back" href="index.html">← SideDim</a>
+    <span class="eyebrow">SideDim Pro</span>
+    <h1>One payment. Yours for good.</h1>
+    <div class="amt">€4.99<s>€6.99</s></div>
+    <p class="muted">Launch price · taxes shown at checkout · no subscription</p>
+    <ul>
+      <li>Every frame, particle pack and flashlight in the Shop</li>
+      <li>Ambient glow: your game spills onto the next screen</li>
+      <li>Decorate your side screens, while gaming or all the time</li>
+      <li>Every colour, size and amount, customisable</li>
+      <li>New items as they come out</li>
+    </ul>
+
+    <div id="ready" hidden>
+      <p><button class="btn" id="buyBtn" type="button">Buy Pro – €4.99</button></p>
+      <p class="muted">Secure checkout by Paddle. Card, PayPal, Apple Pay or Google Pay.</p>
+    </div>
+    <div id="soon">
+      <p><span class="btn disabled">Website checkout opens soon</span></p>
+      <p class="muted">Until then, Pro is available in the Microsoft Store version of SideDim.</p>
+    </div>
+
+    <div id="thanks" class="box" hidden>
+      <h2 style="margin-top:0">Thank you! 💜</h2>
+      <p><b>Your license key is on its way to the email you used at checkout.</b> In SideDim, open the
+        Shop → <i>Enter license key</i> and paste it in. It works offline, on any of your PCs, and after reinstalling.</p>
+    </div>
+
+    <div class="box">
+      <h2 style="margin-top:0;font-size:1.2rem">Already bought? Lost your key?</h2>
+      <p>No account needed: your key lives in your email. Search your inbox (and spam) for <b>SideDim</b>.
+        Still can't find it? Email <a href="mailto:sidedim00@gmail.com">sidedim00@gmail.com</a> with the
+        email you bought with, and we'll send it again.</p>
+      <p class="muted">Refunds within 14 days, no questions asked. See our <a href="terms.html">terms</a>, <a href="refund.html">refund policy</a> and
+        <a href="privacy.html">privacy policy</a>. Our order process is conducted by our online reseller
+        Paddle.com, the Merchant of Record for all our website orders.</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script>
+    // Filled in once Paddle approves the account (Paddle → Developer tools → Authentication / Catalog).
+    const PADDLE_CLIENT_TOKEN = 'live_8d380d0f50b52df2fde706017cf';   // starts with "live_" (public, safe on a web page)
+    const PADDLE_PRICE_ID = 'pri_01m78qvemsmr8mdsr5jt5ty47z';           // starts with "pri_"
+
+    // Switched on once Paddle has verified the account and approved sidedim.com.
+    const CHECKOUT_LIVE = false;
+    const configured = CHECKOUT_LIVE && !PADDLE_CLIENT_TOKEN.startsWith('PADDLE_') && !PADDLE_PRICE_ID.startsWith('PADDLE_');
+    const show = id => { for (const x of ['ready', 'soon', 'thanks']) document.getElementById(x).hidden = x !== id; };
+    if (configured && window.Paddle) {
+      Paddle.Initialize({
+        token: PADDLE_CLIENT_TOKEN,
+        eventCallback: e => {
+          if (e.name === 'checkout.completed') { Paddle.Checkout.close(); show('thanks'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        },
+      });
+      show('ready');
+      document.getElementById('buyBtn').addEventListener('click', () => Paddle.Checkout.open({
+        items: [{ priceId: PADDLE_PRICE_ID, quantity: 1 }],
+        settings: { displayMode: 'overlay', theme: 'dark', locale: 'en' },
+      }));
+      if (location.hash === '#buy') document.getElementById('buyBtn').click();   // "Buy Pro" in the app opens buy.html#buy
+    }
+  </script>
+</body>
+</html>

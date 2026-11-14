@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feedback · SideDim</title>
+  <meta name="description" content="Report a problem or suggest an idea for SideDim. No account needed.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="styles.css?v=18">
+  <style>
+    .fb { max-width: 640px; }
+    .fb label { display: block; font-weight: 700; margin: 18px 0 6px; }
+    .fb .muted { color: var(--muted, #9a9aae); font-size: .9rem; font-weight: 400; }
+    .fb textarea, .fb input[type=email] { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line, #333); background: rgba(255,255,255,.04); color: inherit; font: inherit; }
+    .fb textarea { min-height: 160px; resize: vertical; }
+    .fb pre { white-space: pre-wrap; font-size: .82rem; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line, #333); }
+    .fb .kinds { display: flex; gap: 10px; flex-wrap: wrap; }
+    .fb .kinds label { margin: 0; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line, #333); cursor: pointer; }
+    .fb .status { margin-top: 14px; font-weight: 600; }
+    .fb .hp { display: none; }
+  </style>
+</head>
+<body class="legal-page">
+  <main class="legal wrap fb">
+    <a class="legal-back" href="index.html">← SideDim</a>
+    <h1>Send feedback</h1>
+    <p>Something not working, or an idea? Tell us here — no account needed. It goes straight to the developer.</p>
+
+    <form id="fb">
+      <div class="kinds" role="radiogroup" aria-label="Kind">
+        <label><input type="radio" name="kind" value="Problem" checked> 🐞 Something's wrong</label>
+        <label><input type="radio" name="kind" value="Idea"> 💡 I have an idea</label>
+      </div>
+
+      <label for="msg">Your message</label>
+      <textarea id="msg" required placeholder="What happened, and what did you expect? Which game or app was it?"></textarea>
+
+      <div id="detailsWrap" hidden>
+        <label><input type="checkbox" id="sendDetails" checked> Include technical details <span class="muted">(added by the app — no app names, no messages)</span></label>
+        <pre id="details"></pre>
+      </div>
+
+      <label for="email">Your email <span class="muted">(optional — only if you'd like an answer)</span></label>
+      <input type="email" id="email" autocomplete="email">
+      <input type="checkbox" class="hp" id="botcheck" tabindex="-1" autocomplete="off">
+
+      <p style="margin-top:20px"><button class="btn" type="submit" id="send">Send</button></p>
+      <p class="status" id="status" role="status"></p>
+      <p class="muted">Only what's on this page is sent (through Web3Forms, our form service, by email to the developer). See the <a href="privacy.html">privacy policy</a>.</p>
+    </form>
+  </main>
+  <script>
+    // The form service's public key: it only allows sending a message to the developer's inbox.
+    const ACCESS_KEY = 'WEB3FORMS_ACCESS_KEY';
+    const $ = id => document.getElementById(id);
+    // The app passes the draft after "#" so it never reaches any server.
+    const draft = new URLSearchParams(location.hash.slice(1));
+    if (draft.get('kind') === 'Idea') document.querySelector('input[value=Idea]').checked = true;
+    if (draft.get('msg')) $('msg').value = draft.get('msg');
+    if (draft.get('details')) { $('details').textContent = draft.get('details'); $('detailsWrap').hidden = false; }
+    history.replaceState(null, '', location.pathname);   // keep the draft out of the address bar / history
+
+    $('fb').addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = $('msg').value.trim();
+      if (!msg) { $('status').textContent = 'Write a few words first.'; return; }
+      const kind = document.querySelector('input[name=kind]:checked').value;
+      const details = !$('detailsWrap').hidden && $('sendDetails').checked ? $('details').textContent : '';
+      const body = {
+        access_key: ACCESS_KEY,
+        subject: `SideDim [${kind}] ${msg.split('\n')[0].slice(0, 70)}`,
+        from_name: 'SideDim feedback',
+        message: msg + (details ? '\n\n--- Technical details ---\n' + details : ''),
+        botcheck: $('botcheck').checked,
+      };
+      const email = $('email').value.trim();
+      if (email) body.email = email;
+      if (ACCESS_KEY.startsWith('WEB3FORMS')) {   // form service not set up yet: hand it to the visitor's email app
+        location.href = `mailto:sidedim00@gmail.com?subject=${encodeURIComponent(body.subject)}&body=${encodeURIComponent(body.message)}`;
+        $('status').textContent = 'Your email app opened with your message: just press Send there. Thank you!';
+        return;
+      }
+      $('send').disabled = true; $('status').textContent = 'Sending…';
+      try {
+        const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
+        const j = await r.json();
+        if (!j.success) throw new Error(j.message || 'failed');
+        $('fb').reset(); $('detailsWrap').hidden = true;
+        $('status').textContent = 'Sent — thank you! 💜';
+      } catch {
+        $('status').textContent = "Couldn't send right now. Check your internet and try again.";
+      } finally { $('send').disabled = false; }
+    });
+  </script>
+</body>
+</html>
